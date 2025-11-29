@@ -1,0 +1,7 @@
+## Interface: 110205,120000
+## Title: Numy Config
+## Author: Numy
+## Notes: A shared config framework for several of my addons
+## License: All Rights Reserved
+
+Config\embed.xml
