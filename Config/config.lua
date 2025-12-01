@@ -26,7 +26,7 @@ end
 --- @param db table # saved variable table
 --- @param defaults table<string, any>? # default values for settings
 --- @param localeTable table<string, string>? # localization table
---- @param moduleParent AceAddon? # if passed, will be used to iterate modules and build a module style config
+--- @param moduleParent NumyConfig_AceAddon? # if passed, will be used to iterate modules and build a module style config
 --- @param moduleOrder string[]? # order of modules for display; required if moduleParent is given
 --- @param basicModulesCallback fun(configBuilder: NumyConfigBuilder)? # if given, will be called to at the start of the basic modules section
 function Config:Init(prettyAddonName, db, defaults, localeTable, moduleParent, moduleOrder, basicModulesCallback)
@@ -47,8 +47,6 @@ function Config:Init(prettyAddonName, db, defaults, localeTable, moduleParent, m
         local modulesWithConfig = {};
         local modulesWithoutConfig = {};
         for moduleName, module in moduleParent:IterateModules() do
-            --- @type NumyConfig_Module
-            local module = module;
             local moduleInfo = { module = module, moduleName = moduleName, order = self:GetModuleOrder(moduleName) };
             if module.BuildConfig then
                 table.insert(modulesWithConfig, moduleInfo);
@@ -222,6 +220,7 @@ end
 --- @class NumyConfigBuilder
 local ConfigBuilderMixin = {};
 do
+    --- @private
     --- @param moduleDb table
     --- @param category SettingsCategoryMixin
     --- @param layout SettingsVerticalLayoutMixin
@@ -624,6 +623,11 @@ do
         defaultValue = self:ResolveDefaultValue(settingKey, defaultValue);
 
         local setting = Settings.RegisterAddOnSetting(self.category, variable, settingKey, dbTableOverride or self.db, type(defaultValue), label, defaultValue);
+        hooksecurefunc(setting, "SetValue", function(_, value)
+            if playSoundCallback then
+                playSoundCallback(value);
+            end
+        end);
 
         local data = {
             setting = setting,
@@ -973,7 +977,6 @@ do
 
             self.Control.IncrementButton:Hide();
             self.Control.DecrementButton:Hide();
-            self.data.setting:SetValueChangedCallback(function() self:PlaySound(); end);
         end
 
         function mixin:PlaySound()
