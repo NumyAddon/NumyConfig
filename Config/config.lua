@@ -4,6 +4,7 @@ local addonName, ns = ...;
 local Config = {}
 ns.Config = Config;
 
+--- @type table<string, string>
 local L;
 local settingPrefix = addonName .. "_Setting_";
 
@@ -30,6 +31,7 @@ end
 --- @param moduleOrder string[]? # order of modules for display; required if moduleParent is given
 --- @param basicModulesCallback fun(configBuilder: NumyConfigBuilder)? # if given, will be called to at the start of the basic modules section
 function Config:Init(prettyAddonName, db, defaults, localeTable, moduleParent, moduleOrder, basicModulesCallback)
+    --- @type table<string, string>
     L = localeTable or setmetatable({}, { __index = function(_, key) return key; end });
     self.moduleOrder = moduleOrder;
     self.defaults = defaults;
@@ -270,8 +272,8 @@ do
     end
 
     --- Moves the given initializers to be after the target initializer in the layout. Automatically redraws the layout.
-    --- @param initializersToMove SettingsSearchableElementMixin[] # initializers will end up in the order they are given
-    --- @param targetInitializer SettingsSearchableElementMixin? # defaults to the enable initializer
+    --- @param initializersToMove SettingsElementHierarchyMixin[] # initializers will end up in the order they are given
+    --- @param targetInitializer SettingsElementHierarchyMixin? # defaults to the enable initializer
     function ConfigBuilderMixin:MoveInitializersAfter(initializersToMove, targetInitializer)
         targetInitializer = targetInitializer or self.enableInitializer;
         local initializers = self.layout:GetInitializers();

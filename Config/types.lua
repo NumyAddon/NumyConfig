@@ -80,6 +80,7 @@ function NumyConfig_AceAddon:NewModule(name, ...) end
 function NumyConfig_AceAddon:IterateModules() end
 
 --- @class NumyConfig_Module: AceAddon
+--- @field BuildConfig nil|fun(self: NumyConfig_Module, configBuilder: NumyConfigBuilder, db: table) # db = the module's private database
 local Module = {};
 
 --- @return string # The description of the module. Will be displayed in the options
@@ -88,6 +89,7 @@ function Module:GetDescription() end
 --- @return string # The short name of the module. Will be used as option header
 function Module:GetName() end
 
---- @param configBuilder NumyConfigBuilder
---- @param db table # The module's private database
-function Module:BuildConfig(configBuilder, db) end
+--- @return SettingsCategoryMixin category
+--- @return SettingsVerticalLayoutMixin layout
+function Settings.RegisterVerticalLayoutCategory(name) end
+
