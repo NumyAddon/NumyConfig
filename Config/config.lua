@@ -13,8 +13,10 @@ local mediaPath = ([[Interface\AddOns\%s\Config\media]]):format(addonName);
 mediaPath = [[Interface\AddOns\!!!NumyConfig\Config\media]];
 --@end-debug@
 
-local PAYPAL_TEXTURE = ([[|T%s\paypal.tga:18|t]]):format(mediaPath);
-local COFFEE_TEXTURE = ([[|T%s\coffee.tga:18|t]]):format(mediaPath);
+local PAYPAL_TEXTURE = ([[|T%s\paypal.tga:0|t]]):format(mediaPath);
+local COFFEE_TEXTURE = ([[|T%s\coffee.tga:0|t]]):format(mediaPath);
+local GITHUB_TEXTURE = ([[|T%s\github.tga:0|t]]):format(mediaPath);
+local DISCORD_TEXTURE = ([[|T%s\discord.tga:0|t]]):format(mediaPath);
 
 --- @private
 function Config:GetModuleOrder(moduleName)
@@ -30,12 +32,13 @@ end
 --- @param moduleParent NumyConfig_AceAddon? # if passed, will be used to iterate modules and build a module style config
 --- @param moduleOrder string[]? # order of modules for display; required if moduleParent is given
 --- @param basicModulesCallback fun(configBuilder: NumyConfigBuilder)? # if given, will be called to at the start of the basic modules section
-function Config:Init(prettyAddonName, db, defaults, localeTable, moduleParent, moduleOrder, basicModulesCallback)
+function Config:Init(prettyAddonName, githubRepo, db, defaults, localeTable, moduleParent, moduleOrder, basicModulesCallback)
     --- @type table<string, string>
     L = localeTable or setmetatable({}, { __index = function(_, key) return key; end });
     self.moduleOrder = moduleOrder;
     self.defaults = defaults;
     self.prettyAddonName = prettyAddonName;
+    self.githubRepo = githubRepo;
     self.db = db;
 
     self.category, self.layout = Settings.RegisterVerticalLayoutCategory(prettyAddonName);
@@ -44,6 +47,7 @@ function Config:Init(prettyAddonName, db, defaults, localeTable, moduleParent, m
     self:MakeText(L["Version:"] .. " " .. WHITE_FONT_COLOR:WrapTextInColorCode(version));
 
     self:MakeDonationPrompt();
+    self:MakeSupportButtons();
 
     if moduleParent then
         local modulesWithConfig = {};
@@ -771,8 +775,26 @@ do
             onClick,
             (L["If you enjoy using %s, consider supporting its development with a donation."]):format(self.prettyAddonName),
             {
-                PAYPAL_TEXTURE .. "PayPal",
-                COFFEE_TEXTURE .. "BuyMeACoffee",
+                PAYPAL_TEXTURE .. " PayPal",
+                COFFEE_TEXTURE .. " BuyMeACoffee",
+            }
+        );
+    end
+
+    function Config:MakeSupportButtons()
+        return self:MakeMultiButton(
+            L["Questions or Feedback"],
+            function(_, buttonIndex)
+                if buttonIndex == 1 then
+                    self:CopyText(("https://github.com/numyaddon/%s/issues"):format(self.githubRepo));
+                else
+                    self:CopyText("https://discord.gg/kDuePsVdVt");
+                end
+            end,
+            (L["For issues, feedback, or general question you can check my Discord server or GitHub issues page."]):format(self.prettyAddonName),
+            {
+                GITHUB_TEXTURE .. " GitHub",
+                DISCORD_TEXTURE .. " Discord",
             }
         );
     end
