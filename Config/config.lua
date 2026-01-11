@@ -49,6 +49,13 @@ function Config:Init(prettyAddonName, githubRepo, db, defaults, localeTable, mod
     self:MakeDonationPrompt();
     self:MakeSupportButtons();
 
+    self:MakeMultiButton(
+        L["Pop out settings"],
+        function() self:OpenSettingsExternal(); end,
+        L["Open these settings in a separate window."],
+        { { atlas = "RedButton-Expand" } }
+    ):AddShownPredicate(function() return not self.isPopoutPanelRefresh; end);
+
     if moduleParent then
         local modulesWithConfig = {};
         local modulesWithoutConfig = {};
@@ -180,8 +187,129 @@ function Config:NotifyChange(forceUpdateSliders)
     SettingsInbound.RepairDisplay();
 end
 
+function Config:OpenSettingsExternal()
+    if not self.panel then
+        self.panel = CreateFrame("Frame", nil, UIParent, "SettingsFrameTemplate");
+        self.panel:SetToplevel(true);
+        self.panel:SetMovable(true);
+        self.panel:SetResizable(true);
+        self.panel:SetSize(708, 502);
+        self.panel:SetPoint("CENTER");
+
+        self.panel.TitleBar = CreateFrame("Frame", nil, self.panel, "PanelDragBarTemplate");
+        self.panel.TitleBar:SetPoint("TOPLEFT", 0, 0);
+        self.panel.TitleBar:SetPoint("BOTTOMRIGHT", self.panel, "TOPRIGHT", 0, -24);
+
+        self.panel.ResizeButton = CreateFrame("Button", nil, self.panel, "PanelResizeButtonTemplate");
+        self.panel.ResizeButton:Init(self.panel, 708, 140, 708);
+        self.panel.ResizeButton:SetPoint("BOTTOMRIGHT", -4, 4);
+
+        self.panel.SettingsList = CreateFrame("Frame", nil, self.panel, "SettingsListTemplate");
+        self.panel.SettingsList:SetPoint("TOPLEFT", 22, -22);
+        self.panel.SettingsList:SetPoint("BOTTOMRIGHT", -22, 11);
+        hooksecurefunc(SettingsPanel, 'RepairDisplay', function()
+            if self.panel:IsShown() then
+                self.isPopoutPanelRefresh = true;
+                self.panel.SettingsList:RepairDisplay(self.layout);
+                self.isPopoutPanelRefresh = false;
+            end
+        end);
+
+        self.panel.SettingsList.Header.DefaultsButton.Text:SetText(SETTINGS_DEFAULTS);
+        self.panel.SettingsList.Header.DefaultsButton:SetScript("OnClick", function()
+            StaticPopup_Show("__NUMY_CONFIG_ADDON_PLACEHOLDER__CONFIG_APPLY_DEFAULTS");
+        end);
+        StaticPopupDialogs["__NUMY_CONFIG_ADDON_PLACEHOLDER__CONFIG_APPLY_DEFAULTS"] = {
+            text = L["Are you sure you want to reset these settings to their default values? This cannot be undone."],
+            button1 = RESET,
+            button2 = CANCEL,
+            OnAccept = function() Config:ResetToDefaults(); end,
+            OnCancel = nop,
+            hideOnEscape = 1,
+            whileDead = 1,
+            preferredIndex = 3,
+            fullScreenCover = true,
+        };
+
+        if BlizzMoveAPI then
+            --- @type BlizzMoveAPI
+            local BlizzMoveAPI = BlizzMoveAPI;
+            BlizzMoveAPI:RegisterAddOnFrames({
+                [addonName] = {
+                    ["Standalone options panel"] = {
+                        FrameReference = self.panel,
+                        SubFrames = {
+                            ['titleBar'] = {
+                                FrameReference = self.panel.TitleBar,
+                            },
+                        },
+                    },
+                },
+            });
+        end
+    end
+    local settingsList = self.panel.SettingsList;
+    local category = self.category;
+    local layout = self.layout;
+
+    -- copied from SettingsPanelMixin:DisplayCategory(category)
+    settingsList.Header.Title:SetText(category:GetName());
+
+    -- Help Tip
+    local categoryTutorial = category:GetCategoryTutorialInfo();
+    settingsList.Header.TutorialButton:SetShown(categoryTutorial);
+
+    if categoryTutorial then
+        settingsList.Header.TutorialButton.Ring:Hide();
+
+        settingsList.Header.TutorialButton:SetScript("OnEnter", function()
+            GameTooltip:SetOwner(settingsList.Header.TutorialButton, "ANCHOR_RIGHT", -22, -22);
+            GameTooltip:SetText(categoryTutorial.tooltip);
+            GameTooltip:Show();
+        end);
+
+        settingsList.Header.TutorialButton:SetScript("OnLeave", function()
+            GameTooltip_Hide();
+        end);
+
+        settingsList.Header.TutorialButton:SetScript("OnClick", categoryTutorial.callback);
+    else
+        settingsList.Header.TutorialButton:SetScript("OnEnter", nil);
+        settingsList.Header.TutorialButton:SetScript("OnLeave", nil);
+        settingsList.Header.TutorialButton:SetScript("OnClick", nil);
+    end
+
+    local initializers = layout:GetInitializers();
+    self.isPopoutPanelRefresh = true;
+    settingsList:Display(initializers);
+    self.isPopoutPanelRefresh = false;
+    settingsList:Show();
+
+    self.panel:Show();
+    self.panel:Raise();
+end
+
 function Config:OpenSettings()
     Settings.OpenToCategory(self.category:GetID());
+end
+
+function Config:ResetToDefaults()
+    local settings = {};
+    for setting, category in pairs(SettingsPanel.settings) do
+        if category == self.category then
+            table.insert(settings, setting);
+        end
+    end
+
+    table.sort(settings, function(lhs, rhs)
+        return lhs:GetCommitOrder() < rhs:GetCommitOrder();
+    end);
+
+    for _, setting in ipairs(settings) do
+        if not setting:HasCommitFlag(Settings.CommitFlag.KioskProtected) then
+            securecallfunction(setting.SetValueToDefault, setting)
+        end
+    end
 end
 
 --- @private
@@ -672,7 +800,7 @@ do
     --- @param label string
     --- @param onClick fun(button: Button, buttonIndex: number)
     --- @param tooltip string?
-    --- @param buttonTexts string[]
+    --- @param buttonTexts table<number, string|{atlas: string}|{texture: string}>
     --- @return SettingsListElementInitializer initializer
     function Config:MakeMultiButton(label, onClick, tooltip, buttonTexts)
         local data = {
@@ -956,12 +1084,24 @@ do
             end
             local function onLeave() GameTooltip:Hide(); end
             self.ButtonContainer.buttonPool:ReleaseAll();
+            self.ButtonContainer.plainButtonPool:ReleaseAll();
 
             local anchorTarget;
             for i, buttonText in ipairs(self.data.buttonTexts) do
-                local button = self.ButtonContainer.buttonPool:Acquire();
+                local button;
+                if type(buttonText) == "string" then
+                    button = self.ButtonContainer.buttonPool:Acquire();
+                    button:SetTextToFit(buttonText);
+                else
+                    button = self.ButtonContainer.plainButtonPool:Acquire();
+                    button:SetSize(22, 22);
+                    if buttonText.atlas then
+                        button:SetNormalAtlas(buttonText.atlas);
+                    elseif buttonText.texture then
+                        button:SetNormalTexture(buttonText.texture);
+                    end
+                end
                 button:SetID(i);
-                button:SetTextToFit(buttonText);
                 button:Show();
                 if i == 1 then
                     button:SetPoint("LEFT", self.ButtonContainer, "LEFT", 0, 0);

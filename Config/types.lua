@@ -27,11 +27,12 @@
 
 --- @class NumyConfig_MultiButton_ButtonContainer
 --- @field buttonPool FramePool<UIPanelButtonTemplate>
+--- @field plainButtonPool FramePool<Button>
 
 --- @class NumyConfig_MultiButtonSettingData
 --- @field name string
 --- @field tooltip string
---- @field buttonTexts string[]
+--- @field buttonTexts table<number, string|{atlas: string}|{texture: string}>
 --- @field OnButtonClick fun(button: Button, buttonIndex: number)
 
 --- @class NumyConfig_SoundSelectorMixin: SettingsDropdownControlTemplate
