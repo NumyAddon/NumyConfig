@@ -189,7 +189,8 @@ end
 
 function Config:OpenSettingsExternal()
     if not self.panel then
-        self.panel = CreateFrame("Frame", nil, UIParent, "SettingsFrameTemplate");
+        local panelName = addonName .. "_StandaloneConfigPanel";
+        self.panel = CreateFrame("Frame", panelName, UIParent, "SettingsFrameTemplate");
         self.panel:SetToplevel(true);
         self.panel:SetMovable(true);
         self.panel:SetResizable(true);
@@ -215,6 +216,8 @@ function Config:OpenSettingsExternal()
             end
         end);
 
+        self.panel.NineSlice.Text:SetText(self.prettyAddonName .. " " .. SETTINGS_TITLE)
+
         self.panel.SettingsList.Header.DefaultsButton.Text:SetText(SETTINGS_DEFAULTS);
         self.panel.SettingsList.Header.DefaultsButton:SetScript("OnClick", function()
             StaticPopup_Show("__NUMY_CONFIG_ADDON_PLACEHOLDER__CONFIG_APPLY_DEFAULTS");
@@ -230,6 +233,8 @@ function Config:OpenSettingsExternal()
             preferredIndex = 3,
             fullScreenCover = true,
         };
+
+        tinsert(UISpecialFrames, panelName);
 
         if BlizzMoveAPI then
             --- @type BlizzMoveAPI
