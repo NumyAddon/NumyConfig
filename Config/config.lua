@@ -369,6 +369,11 @@ do
         self.category = category;
         self.layout = layout;
         self.isExpanded = isExpanded;
+
+        self.sliderOptions = {
+            scale = self:MakeSliderOptions(0.5, 2, 0.05, function(value) return ('%.1fx'):format(value); end),
+            percent = self:MakeSliderOptions(0, 1, 0.01, function(value) return ('%d%%'):format(100 * value); end),
+        };
     end
 
     --- @param initializer SettingsElementHierarchyMixin
@@ -395,6 +400,11 @@ do
         if applyDefaultsToNilValues then
             applyDefaults(self.db, defaults, applyNestedDefaults);
         end
+    end
+
+    --- @param callback fun(setting: AddOnSettingMixin, value: boolean)?
+    function ConfigBuilderMixin:SetDefaultCallback(callback)
+        self.defaultCallback = callback;
     end
 
     local hidePredicate = function() return false; end;
@@ -475,6 +485,9 @@ do
         end
         local initializer, setting = Config:MakeCheckbox(label, settingKey, tooltip, defaultValue, overrideTable or self.db);
         initializer:AddShownPredicate(self.isExpanded);
+        if self.defaultCallback then
+            setting:SetValueChangedCallback(self.defaultCallback);
+        end
         if callback then
             setting:SetValueChangedCallback(callback);
         end
@@ -511,6 +524,9 @@ do
         end
         local initializer, setting = Config:MakeSlider(label, settingKey, tooltip, options, defaultValue, overrideTable or self.db);
         initializer:AddShownPredicate(self.isExpanded);
+        if self.defaultCallback then
+            setting:SetValueChangedCallback(self.defaultCallback);
+        end
         if callback then
             setting:SetValueChangedCallback(callback);
         end
@@ -533,6 +549,9 @@ do
         end
         local initializer, setting = Config:MakeDropdown(label, settingKey, tooltip, options, defaultValue, overrideTable or self.db);
         initializer:AddShownPredicate(self.isExpanded);
+        if self.defaultCallback then
+            setting:SetValueChangedCallback(self.defaultCallback);
+        end
         if callback then
             setting:SetValueChangedCallback(callback);
         end
@@ -556,6 +575,9 @@ do
         end
         local initializer, setting = Config:MakeSoundSelector(label, settingKey, tooltip, options, playSoundCallback, defaultValue, overrideTable or self.db);
         initializer:AddShownPredicate(self.isExpanded);
+        if self.defaultCallback then
+            setting:SetValueChangedCallback(self.defaultCallback);
+        end
         if callback then
             setting:SetValueChangedCallback(callback);
         end
@@ -577,6 +599,9 @@ do
         end
         local initializer, setting = Config:MakeInput(label, settingKey, tooltip, defaultValue, overrideTable or self.db);
         initializer:AddShownPredicate(self.isExpanded);
+        if self.defaultCallback then
+            setting:SetValueChangedCallback(self.defaultCallback);
+        end
         if callback then
             setting:SetValueChangedCallback(callback);
         end
@@ -598,6 +623,9 @@ do
         end
         local initializer, setting = Config:MakeColorPicker(label, settingKey, tooltip, defaultValue, overrideTable or self.db);
         initializer:AddShownPredicate(self.isExpanded);
+        if self.defaultCallback then
+            setting:SetValueChangedCallback(self.defaultCallback);
+        end
         if callback then
             setting:SetValueChangedCallback(callback);
         end
