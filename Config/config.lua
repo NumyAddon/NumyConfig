@@ -1,4 +1,6 @@
-local addonName, ns = ...;
+local addonName = ...;
+--- @class NumyConfigNS
+local ns = select(2, ...);
 
 --- @class NumyConfig
 local Config = {}
