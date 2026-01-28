@@ -84,6 +84,9 @@ function NumyConfig_AceAddon:IterateModules() end
 --- @field BuildConfig nil|fun(self: NumyConfig_Module, configBuilder: NumyConfigBuilder, db: table) # db = the module's private database
 local Module = {};
 
+Module.NewModule = NumyConfig_AceAddon.NewModule;
+Module.IterateModules = NumyConfig_AceAddon.IterateModules;
+
 --- @return string # The description of the module. Will be displayed in the options
 function Module:GetDescription() end
 
