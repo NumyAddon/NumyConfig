@@ -33,6 +33,14 @@ end
 --- @param moduleOrder string[]? # order of modules for display; required if moduleParent is given
 --- @param basicModulesCallback fun(configBuilder: NumyConfigBuilder)? # if given, will be called to at the start of the basic modules section
 function Config:Init(prettyAddonName, githubRepo, db, defaults, localeTable, moduleParent, moduleOrder, basicModulesCallback)
+    --@debug@
+    local devAddon = '!!!NumyConfig';
+    if not C_AddOns.IsAddOnLoaded(devAddon) and C_AddOns.IsAddOnLoadOnDemand(devAddon) then
+        C_AddOns.EnableAddOn(devAddon);
+        C_AddOns.LoadAddOn(devAddon);
+    end
+    --@debug-end@
+
     --- @type table<string, string>
     L = localeTable or setmetatable({}, { __index = function(_, key) return key; end });
     self.moduleOrder = moduleOrder;
@@ -295,7 +303,11 @@ function Config:OpenSettingsExternal()
 end
 
 function Config:OpenSettings()
-    Settings.OpenToCategory(self.category:GetID());
+    if C_SettingsUtil and C_SettingsUtil.OpenSettingsPanel and InCombatLockdown() then
+        self:OpenSettingsExternal();
+    else
+        Settings.OpenToCategory(self.category:GetID());
+    end
 end
 
 function Config:ResetToDefaults()

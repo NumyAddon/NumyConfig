@@ -2,6 +2,8 @@
 ## Title: Numy Config
 ## Author: Numy
 ## Notes: A shared config framework for several of my addons
+## LoadOnDemand: 1
+## LoadWith: Blizzard_UIParent
 ## X-License: All Rights Reserved
 
 Config\embed.xml
