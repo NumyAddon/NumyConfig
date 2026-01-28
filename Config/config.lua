@@ -41,7 +41,7 @@ function Config:Init(prettyAddonName, githubRepo, db, defaults, localeTable, mod
         C_AddOns.EnableAddOn(devAddon);
         C_AddOns.LoadAddOn(devAddon);
     end
-    --@debug-end@
+    --@end-debugd@
 
     --- @type table<string, string>
     L = localeTable or setmetatable({}, { __index = function(_, key) return key; end });
