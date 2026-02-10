@@ -38,6 +38,26 @@
 --- @class NumyConfig_SoundSelectorMixin: SettingsDropdownControlTemplate
 --- @field PreviewIcon Button
 
+--- @class NumyConfig_ExpandSettingData
+--- @field name string
+--- @field nameGetter fun(): string
+--- @field tooltip string?
+--- @field checkboxTooltip string?
+--- @field expanded boolean
+--- @field setting AddOnSettingMixin?
+
+--- @class NumyConfig_ExpandMixin: EventFrame
+--- @field Button NumyConfig_Expand_Button
+--- @field Tooltip DefaultTooltipMixin
+
+--- @class NumyConfig_Expand_Button: Button
+--- @field Left Texture
+--- @field Right Texture
+--- @field Text FontString
+--- @field Checkbox NumyConfig_Expand_Checkbox
+
+--- @class NumyConfig_Expand_Checkbox: CheckButton, SettingsCheckboxMixin
+
 --- @class NumyConfig_TextMixin: Frame, DefaultTooltipMixin
 --- @field Text FontString
 

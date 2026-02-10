@@ -139,7 +139,68 @@ https://raw.githubusercontent.com/Gethe/wow-ui-source/refs/heads/live/Interface/
             </Button>
         </Frames>
     </Frame>
-    <Frame name="__NUMY_CONFIG_ADDON_PLACEHOLDER___SettingsExpandTemplate" inherits="SettingsExpandableSectionTemplate" mixin="__NUMY_CONFIG_ADDON_PLACEHOLDER___SettingsExpandMixin" virtual="true">
-        <Size y="25" />
-    </Frame>
+    <EventFrame name="__NUMY_CONFIG_ADDON_PLACEHOLDER___SettingsExpandTemplate" mixin="__NUMY_CONFIG_ADDON_PLACEHOLDER___SettingsExpandMixin" virtual="true">
+        <Size y="25"/>
+        <Frames>
+            <Frame parentKey="Tooltip" mixin="DefaultTooltipMixin" setAllPoints="true" propagateMouseInput="Clicks" enableMouseMotion="true">
+                <Scripts>
+                    <OnLoad method="OnLoad"/>
+                </Scripts>
+            </Frame>
+            <Button parentKey="Button">
+                <Size y="30"/>
+                <Anchors>
+                    <Anchor point="TOPLEFT" x="0" y="0"/>
+                    <Anchor point="TOPRIGHT" x="-20" y="0"/>
+                </Anchors>
+                <Layers>
+                    <Layer level="BACKGROUND">
+                        <Texture parentKey="Left" atlas="Options_ListExpand_Left" useAtlasSize="true">
+                            <Anchors>
+                                <Anchor point="TOPLEFT"/>
+                            </Anchors>
+                        </Texture>
+                        <Texture parentKey="Right" atlas="Options_ListExpand_Right" useAtlasSize="true">
+                            <Anchors>
+                                <Anchor point="TOPRIGHT"/>
+                            </Anchors>
+                        </Texture>
+                        <Texture atlas="_Options_ListExpand_Middle" useAtlasSize="true">
+                            <Anchors>
+                                <Anchor point="TOPLEFT" relativeKey="$parent.Left" relativePoint="TOPRIGHT"/>
+                                <Anchor point="TOPRIGHT" relativeKey="$parent.Right" relativePoint="TOPLEFT"/>
+                            </Anchors>
+                        </Texture>
+                    </Layer>
+                    <Layer level="OVERLAY">
+                        <FontString parentKey="Text" font="GameFontNormal" justifyH="CENTER" maxLines="1">
+                            <Anchors>
+                                <Anchor point="LEFT" x="28" y="2"/>
+                            </Anchors>
+                        </FontString>
+                    </Layer>
+                </Layers>
+                <Frames>
+                    <CheckButton parentKey="Checkbox" mixin="SettingsCheckboxMixin" motionScriptsWhileDisabled="true">
+                        <Size x="23" y="22"/>
+                        <Anchors>
+                            <Anchor point="RIGHT" relativeKey="$parent.Text" relativePoint="LEFT" x= "-2" y="0"/>
+                        </Anchors>
+                        <Scripts>
+                            <OnLoad method="OnLoad"/>
+                            <OnEnter method="OnEnter"/>
+                            <OnLeave method="OnLeave"/>
+                        </Scripts>
+                        <NormalTexture atlas="checkbox-minimal" useAtlasSize="true"/>
+                        <PushedTexture atlas="checkbox-minimal" useAtlasSize="true"/>
+                        <CheckedTexture atlas="checkmark-minimal" useAtlasSize="true"/>
+                        <DisabledCheckedTexture atlas="checkmark-minimal-disabled" useAtlasSize="true"/>
+                    </CheckButton>
+                </Frames>
+            </Button>
+        </Frames>
+        <Scripts>
+            <OnLoad method="OnLoad"/>
+        </Scripts>
+    </EventFrame>
 </Ui>

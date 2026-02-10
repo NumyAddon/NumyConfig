@@ -21,6 +21,7 @@ local GITHUB_TEXTURE = ([[|T%s\github.tga:0|t]]):format(mediaPath);
 local DISCORD_TEXTURE = ([[|T%s\discord.tga:0|t]]):format(mediaPath);
 
 --- @private
+--- @return number
 function Config:GetModuleOrder(moduleName)
     local map = tInvert(self.moduleOrder);
 
@@ -67,9 +68,12 @@ function Config:Init(prettyAddonName, githubRepo, db, defaults, localeTable, mod
     ):AddShownPredicate(function() return not self.isPopoutPanelRefresh; end);
 
     if moduleParent then
+        --- @type NumyConfig_ModuleInfo[]
         local modulesWithConfig = {};
+        --- @type NumyConfig_ModuleInfo[]
         local modulesWithoutConfig = {};
         for moduleName, module in moduleParent:IterateModules() do
+            --- @class NumyConfig_ModuleInfo
             local moduleInfo = { module = module, moduleName = moduleName, order = self:GetModuleOrder(moduleName) };
             if module.BuildConfig then
                 table.insert(modulesWithConfig, moduleInfo);
@@ -112,8 +116,39 @@ function Config:Init(prettyAddonName, githubRepo, db, defaults, localeTable, mod
         table.sort(modulesWithConfig, function(a, b) return a.order < b.order; end);
         for _, moduleInfo in ipairs(modulesWithConfig) do
             local moduleName, module = moduleInfo.moduleName, moduleInfo.module;
-            local expandInitializer, isExpanded = self:MakeExpandableSection(function() return formatModuleName(module:GetName(), self.db.modules[moduleName]); end);
+
+            local variable = self:GetUniqueVariable();
+            local setting = Settings.RegisterAddOnSetting(
+                self.category,
+                variable,
+                moduleName,
+                self.db.modules,
+                Settings.VarType.Boolean,
+                ENABLE,
+                true
+            );
             local changingExpandText = false;
+            local function onChange(_, value)
+                if value then
+                    module:Enable();
+                else
+                    module:Disable();
+                end
+
+                changingExpandText = true;
+                self:NotifyChange();
+                changingExpandText = false;
+                self:NotifyChange();
+            end
+
+            setting:SetValueChangedCallback(onChange)
+            local expandInitializer, isExpanded = self:MakeExpandableSection(
+                function() return formatModuleName(module:GetName(), self.db.modules[moduleName]); end,
+                module:GetDescription(),
+                setting,
+                onChange,
+                L['Enable this module']
+            );
             expandInitializer:AddShownPredicate(function() return not changingExpandText; end);
 
             self.db.moduleDb[moduleName] = self.db.moduleDb[moduleName] or {};
@@ -125,21 +160,11 @@ function Config:Init(prettyAddonName, githubRepo, db, defaults, localeTable, mod
                 ENABLE,
                 moduleName,
                 L['Enable this module'],
-                function(_, value)
-                    if value then
-                        module:Enable();
-                    else
-                        module:Disable();
-                    end
-
-                    changingExpandText = true;
-                    self:NotifyChange();
-                    changingExpandText = false;
-                    self:NotifyChange();
-                end,
+                onChange,
                 true,
                 self.db.modules
             );
+            enableInitializer:AddShownPredicate(function() return not changingExpandText; end);
             configBuilder:SetEnableInitializer(enableInitializer);
 
             securecallfunction(module.BuildConfig, module, configBuilder, moduleDb);
@@ -864,16 +889,20 @@ do
     end
 
     --- @param sectionName string|fun(): string
+    --- @param tooltip string?
+    --- @param setting AddOnSettingMixin? # If provided, it'll add a checkbox to the expand box to enable/disable the setting
+    --- @param checkboxTooltip string? # Tooltip for the checkbox; only applies if a setting is provided
     --- @return SettingsExpandableSectionInitializer initializer
     --- @return fun(): boolean isExpanded
-    function Config:MakeExpandableSection(sectionName)
+    function Config:MakeExpandableSection(sectionName, tooltip, setting, onChange, checkboxTooltip)
         local nameGetter = sectionName;
         if type(sectionName) == "string" then
             nameGetter = function() return sectionName; end
         end
         local expandInitializer = CreateFromMixins(SettingsExpandableSectionInitializer);
 
-        local data = { name = nameGetter(), nameGetter = nameGetter, expanded = false };
+        --- @type NumyConfig_ExpandSettingData
+        local data = { name = nameGetter(), nameGetter = nameGetter, expanded = false, setting = setting, tooltip = tooltip, checkboxTooltip = checkboxTooltip };
         expandInitializer:Init("__NUMY_CONFIG_ADDON_PLACEHOLDER___SettingsExpandTemplate", data);
 
         expandInitializer.GetExtent = ScrollBoxFactoryInitializerMixin.GetExtent
@@ -1198,14 +1227,44 @@ do
 
     __NUMY_CONFIG_ADDON_PLACEHOLDER___SettingsExpandMixin = CreateFromMixins(SettingsExpandableSectionMixin);
     do
-        --- @class NumyConfig_ExpandMixin: SettingsExpandableSectionTemplate
+        --- @class NumyConfig_ExpandMixin: SettingsExpandableSectionMixin
         local mixin = __NUMY_CONFIG_ADDON_PLACEHOLDER___SettingsExpandMixin;
 
         --- @param initializer SettingsExpandableSectionInitializer
         function mixin:Init(initializer)
             SettingsExpandableSectionMixin.Init(self, initializer);
+            --- @type NumyConfig_ExpandSettingData
             self.data = initializer.data;
             self:EvaluateVisibility(self.data.expanded);
+
+            local setting = self.data.setting;
+            self.Button.Checkbox:SetShown(setting ~= nil);
+            if setting then
+                self.Button.Checkbox:Init(setting:GetValue());
+                self.Button.Checkbox:SetScript("OnClick", function(checkbox)
+                    local value = checkbox:GetChecked();
+                    setting:SetValue(value);
+                end);
+
+                if self.data.checkboxTooltip then
+                    self.Button.Checkbox:SetTooltipFunc(function()
+                        GameTooltip_AddHighlightLine(SettingsTooltip, self.data.nameGetter());
+                        if self.data.tooltip then
+                            GameTooltip_AddNormalLine(SettingsTooltip, self.data.tooltip);
+                        end
+                        GameTooltip_AddInstructionLine(SettingsTooltip, self.data.checkboxTooltip);
+                    end);
+                end
+            end
+
+            if self.data.tooltip then
+                --self.Tooltip.tooltipXOffset = -800;
+                self.Tooltip.tooltipAnchoring = "ANCHOR_TOP";
+                self.Tooltip:SetTooltipFunc(function()
+                    GameTooltip_AddHighlightLine(SettingsTooltip, self.data.nameGetter());
+                    GameTooltip_AddNormalLine(SettingsTooltip, self.data.tooltip);
+                end);
+            end
         end
 
         function mixin:OnExpandedChanged(expanded)
